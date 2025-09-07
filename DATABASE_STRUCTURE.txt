@@ -1,0 +1,297 @@
+СТРУКТУРА БАЗЫ ДАННЫХ ЭЛЕКТРОННОГО ЖУРНАЛА БГУИР
+=====================================================
+
+КОЛЛЕКЦИЯ: admins
+-----------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно) - ФИО администратора
+- email: String (обязательно, уникальный) - Email для входа
+- password: String (обязательно) - Хешированный пароль
+- role: String (по умолчанию "Admin") - Роль пользователя
+- createdAt: Date (автогенерируемый) - Дата создания
+- updatedAt: Date (автогенерируемый) - Дата обновления
+- lastLogin: Date - Время последнего входа
+
+Индексы:
+- email (уникальный)
+
+КОЛЛЕКЦИЯ: departments (кафедры)
+-------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно, уникальный) - Название кафедры
+- description: String - Описание кафедры
+- head: ObjectId (ссылка на Teacher) - Заведующий кафедрой
+- teachers: [ObjectId] (ссылки на Teacher) - Преподаватели кафедры
+- isActive: Boolean (по умолчанию true) - Активна ли кафедра
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- name (уникальный)
+
+КОЛЛЕКЦИЯ: teachers (преподаватели)
+----------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно) - ФИО преподавателя
+- email: String (обязательно, уникальный) - Email для входа
+- password: String (обязательно) - Хешированный пароль
+- department: ObjectId (обязательно, ссылка на Department) - Кафедра
+- subjects: [ObjectId] (ссылки на Subject) - Преподаваемые предметы
+- role: String (по умолчанию "Teacher") - Роль пользователя
+- isActive: Boolean (по умолчанию true) - Активен ли преподаватель
+- lastLogin: Date - Время последнего входа
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- email (уникальный)
+- department
+
+КОЛЛЕКЦИЯ: groups (группы)
+-------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно, уникальный) - Название группы
+- specialty: String (обязательно) - Специальность
+- course: Number (обязательно, 1-6) - Курс обучения
+- students: [ObjectId] (ссылки на Student) - Студенты группы
+- isActive: Boolean (по умолчанию true) - Активна ли группа
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- name (уникальный)
+- specialty, course
+
+КОЛЛЕКЦИЯ: students (студенты)
+-----------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно) - ФИО студента
+- password: String (обязательно) - Хешированный пароль
+- group: ObjectId (обязательно, ссылка на Group) - Группа студента
+- studentNumber: String (уникальный) - Номер студенческого билета
+- role: String (по умолчанию "Student") - Роль пользователя
+- isActive: Boolean (по умолчанию true) - Активен ли студент
+- lastLogin: Date - Время последнего входа
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- name, group (композитный)
+- group
+- studentNumber (уникальный, разреженный)
+
+КОЛЛЕКЦИЯ: subjects (предметы)
+-----------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно) - Название предмета
+- code: String (уникальный) - Код предмета
+- description: String - Описание предмета
+- department: ObjectId (обязательно, ссылка на Department) - Кафедра
+- totalHours: Object - Общее количество часов:
+  - lectureHours: Number (по умолчанию 0) - Часы лекций
+  - practicalHours: Number (по умолчанию 0) - Часы практических
+  - labHours: Number (по умолчанию 0) - Часы лабораторных
+- isActive: Boolean (по умолчанию true) - Активен ли предмет
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- name
+- code (уникальный)
+- department
+
+КОЛЛЕКЦИЯ: semesters (семестры)
+------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- name: String (обязательно, enum: ["Осенний", "Весенний"]) - Название семестра
+- year: Number (обязательно) - Учебный год
+- startDate: Date (обязательно) - Дата начала семестра
+- endDate: Date (обязательно) - Дата окончания семестра
+- isActive: Boolean (по умолчанию false) - Активный семестр
+- examStartDate: Date - Дата начала экзаменов
+- examEndDate: Date - Дата окончания экзаменов
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- year, name (композитный уникальный)
+- isActive
+
+КОЛЛЕКЦИЯ: schedules (шаблоны расписания)
+---------------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- subject: ObjectId (обязательно, ссылка на Subject) - Предмет
+- teacher: ObjectId (обязательно, ссылка на Teacher) - Преподаватель
+- groups: [ObjectId] (обязательно, ссылки на Group) - Группы
+- semester: ObjectId (обязательно, ссылка на Semester) - Семестр
+- lessonType: String (обязательно, enum) - Тип занятия:
+  ["Лекция", "Практическое занятие", "Лабораторная работа", 
+   "Кураторский час", "Зачет", "Экзамен"]
+- dayOfWeek: Number (обязательно, 1-7) - День недели (1=Пн, 7=Вс)
+- weeksOfMonth: [Number] (1-4) - Недели месяца для повтора
+- startTime: String (обязательно, формат HH:MM) - Время начала
+- endTime: String (обязательно, формат HH:MM) - Время окончания
+- classroom: String (обязательно) - Номер аудитории
+- duration: Number (по умолчанию 80, мин) - Продолжительность
+- isRecurring: Boolean (по умолчанию true) - Повторяющееся ли
+- isActive: Boolean (по умолчанию true) - Активно ли расписание
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- semester, dayOfWeek, startTime
+- teacher, semester
+- subject, semester
+- groups, semester
+
+КОЛЛЕКЦИЯ: scheduleinstances (конкретные занятия)
+-----------------------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- schedule: ObjectId (обязательно, ссылка на Schedule) - Шаблон расписания
+- subject: ObjectId (обязательно, ссылка на Subject) - Предмет
+- teacher: ObjectId (обязательно, ссылка на Teacher) - Преподаватель
+- groups: [ObjectId] (обязательно, ссылки на Group) - Группы
+- semester: ObjectId (обязательно, ссылка на Semester) - Семестр
+- date: Date (обязательно) - Дата проведения
+- startTime: String (обязательно) - Время начала
+- endTime: String (обязательно) - Время окончания
+- classroom: String (обязательно) - Аудитория
+- lessonType: String (обязательно, enum) - Тип занятия
+- status: String (enum, по умолчанию "Запланировано") - Статус:
+  ["Запланировано", "Проведено", "Отменено", "Перенесено"]
+- attendanceMarked: Boolean (по умолчанию false) - Отмечена ли посещаемость
+- notes: String - Заметки к занятию
+- cancelReason: String - Причина отмены
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- date, startTime
+- teacher, date
+- groups, date
+- semester, date
+- schedule, date (композитный уникальный)
+
+КОЛЛЕКЦИЯ: attendances (посещаемость)
+-----------------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- scheduleInstance: ObjectId (обязательно, ссылка на ScheduleInstance) - Занятие
+- student: ObjectId (обязательно, ссылка на Student) - Студент
+- teacher: ObjectId (обязательно, ссылка на Teacher) - Преподаватель
+- subject: ObjectId (обязательно, ссылка на Subject) - Предмет
+- group: ObjectId (обязательно, ссылка на Group) - Группа
+- semester: ObjectId (обязательно, ссылка на Semester) - Семестр
+- date: Date (обязательно) - Дата занятия
+- lessonType: String (обязательно, enum) - Тип занятия
+- status: String (enum, по умолчанию "Отсутствует") - Статус:
+  ["Присутствует", "Отсутствует", "Опоздал", "Ушел раньше"]
+- attendedHours: Number (по умолчанию 0, 0-4) - Посещенные часы
+- missedHours: Number (по умолчанию 0, 0-4) - Пропущенные часы
+- notes: String - Заметки к посещаемости
+- markedBy: ObjectId (обязательно, ссылка на Teacher) - Кто отметил
+- markedAt: Date (по умолчанию текущее время) - Когда отмечено
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- scheduleInstance, student (композитный уникальный)
+- student, semester, subject
+- group, date, subject
+- teacher, date
+
+КОЛЛЕКЦИЯ: grades (оценки)
+-------------------------
+Поля:
+- _id: ObjectId (автогенерируемый)
+- student: ObjectId (обязательно, ссылка на Student) - Студент
+- subject: ObjectId (обязательно, ссылка на Subject) - Предмет
+- teacher: ObjectId (обязательно, ссылка на Teacher) - Преподаватель
+- group: ObjectId (обязательно, ссылка на Group) - Группа
+- semester: ObjectId (обязательно, ссылка на Semester) - Семестр
+- scheduleInstance: ObjectId (ссылка на ScheduleInstance) - Занятие
+- gradeType: String (обязательно, enum) - Тип оценки:
+  ["Текущая", "Контрольная", "Лабораторная", "Зачет", "Экзамен"]
+- value: Number (обязательно, 1-10) - Значение оценки
+- date: Date (обязательно, по умолчанию текущее время) - Дата выставления
+- description: String - Описание оценки
+- notes: String - Заметки к оценке
+- markedBy: ObjectId (обязательно, ссылка на Teacher) - Кто выставил
+- createdAt: Date (автогенерируемый)
+- updatedAt: Date (автогенерируемый)
+
+Индексы:
+- student, subject, semester
+- subject, teacher, date
+- group, subject, gradeType
+
+СВЯЗИ МЕЖДУ КОЛЛЕКЦИЯМИ
+=======================
+
+1. departments -> teachers (one-to-many)
+2. departments -> subjects (one-to-many)
+3. teachers -> subjects (many-to-many)
+4. groups -> students (one-to-many)
+5. schedules -> scheduleinstances (one-to-many)
+6. scheduleinstances -> attendances (one-to-many)
+7. scheduleinstances -> grades (one-to-many)
+8. students -> attendances (one-to-many)
+9. students -> grades (one-to-many)
+
+ПРИМЕРЫ ЗАПРОСОВ
+===============
+
+1. Получить расписание студента на сегодня:
+   scheduleinstances.find({
+     groups: studentGroupId,
+     date: { $gte: todayStart, $lt: tomorrowStart }
+   })
+
+2. Получить посещаемость группы по предмету:
+   attendances.find({
+     group: groupId,
+     subject: subjectId,
+     semester: semesterId
+   })
+
+3. Получить статистику преподавателя:
+   attendances.aggregate([
+     { $match: { teacher: teacherId } },
+     { $group: { _id: "$subject", totalLessons: { $sum: 1 } } }
+   ])
+
+ОГРАНИЧЕНИЯ И ВАЛИДАЦИЯ
+======================
+
+1. Время занятий: startTime < endTime
+2. Даты семестра: startDate < endDate
+3. Оценки: 1 <= value <= 10
+4. Курс группы: 1 <= course <= 6
+5. Часы посещаемости: attendedHours + missedHours <= 4
+6. Уникальность email у админов и преподавателей
+7. Уникальность расписания: один шаблон на дату
+8. Уникальность посещаемости: один студент на занятие
+
+РАЗМЕР И ПРОИЗВОДИТЕЛЬНОСТЬ
+==========================
+
+Ожидаемый объем данных:
+- Студенты: ~10,000 записей
+- Преподаватели: ~500 записей
+- Занятия в семестр: ~50,000 записей
+- Посещаемость в семестр: ~500,000 записей
+- Оценки в семестр: ~100,000 записей
+
+Индексы оптимизированы для частых запросов:
+- Поиск расписания по группе/преподавателю
+- Получение посещаемости по студенту/группе
+- Аналитические запросы по семестрам

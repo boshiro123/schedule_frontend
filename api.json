@@ -1,0 +1,2576 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Электронный журнал посещаемости API",
+    "version": "1.0.0",
+    "description": "API для системы учета посещаемости студентов в университете",
+    "contact": {
+      "name": "Система поддержки",
+      "email": "support@university.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Локальный сервер разработки"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Admin": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор администратора"
+          },
+          "name": {
+            "type": "string",
+            "description": "ФИО администратора"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email администратора"
+          },
+          "password": {
+            "type": "string",
+            "description": "Пароль администратора"
+          },
+          "role": {
+            "type": "string",
+            "default": "Admin",
+            "description": "Роль пользователя"
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Время последнего входа"
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "required": ["name", "password", "group"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор студента"
+          },
+          "name": {
+            "type": "string",
+            "description": "ФИО студента"
+          },
+          "password": {
+            "type": "string",
+            "description": "Пароль студента"
+          },
+          "group": {
+            "type": "string",
+            "description": "ID группы"
+          },
+          "studentNumber": {
+            "type": "string",
+            "description": "Номер студенческого билета"
+          },
+          "role": {
+            "type": "string",
+            "default": "Student",
+            "description": "Роль пользователя"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активен ли студент"
+          }
+        }
+      },
+      "Teacher": {
+        "type": "object",
+        "required": ["name", "email", "password", "department"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор преподавателя"
+          },
+          "name": {
+            "type": "string",
+            "description": "ФИО преподавателя"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email преподавателя"
+          },
+          "password": {
+            "type": "string",
+            "description": "Пароль преподавателя"
+          },
+          "department": {
+            "type": "string",
+            "description": "ID кафедры"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Массив ID преподаваемых предметов"
+          },
+          "role": {
+            "type": "string",
+            "default": "Teacher",
+            "description": "Роль пользователя"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активен ли преподаватель"
+          }
+        }
+      },
+      "Department": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор кафедры"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название кафедры"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание кафедры"
+          },
+          "head": {
+            "type": "string",
+            "description": "ID заведующего кафедрой"
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Массив ID преподавателей кафедры"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активна ли кафедра"
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "required": ["name", "specialty", "course"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор группы"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название группы"
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Специальность группы"
+          },
+          "course": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Курс обучения"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Массив ID студентов группы"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активна ли группа"
+          }
+        }
+      },
+      "Subject": {
+        "type": "object",
+        "required": ["name", "department"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор предмета"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название предмета"
+          },
+          "code": {
+            "type": "string",
+            "description": "Код предмета"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание предмета"
+          },
+          "department": {
+            "type": "string",
+            "description": "ID кафедры"
+          },
+          "totalHours": {
+            "type": "object",
+            "properties": {
+              "lectureHours": {
+                "type": "number",
+                "description": "Количество часов лекций"
+              },
+              "practicalHours": {
+                "type": "number",
+                "description": "Количество часов практических занятий"
+              },
+              "labHours": {
+                "type": "number",
+                "description": "Количество часов лабораторных работ"
+              }
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активен ли предмет"
+          }
+        }
+      },
+      "Semester": {
+        "type": "object",
+        "required": ["name", "year", "startDate", "endDate"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор семестра"
+          },
+          "name": {
+            "type": "string",
+            "enum": ["Осенний", "Весенний"],
+            "description": "Название семестра"
+          },
+          "year": {
+            "type": "number",
+            "description": "Учебный год"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата начала семестра"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата окончания семестра"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": false,
+            "description": "Является ли семестр активным"
+          },
+          "examStartDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата начала экзаменов"
+          },
+          "examEndDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата окончания экзаменов"
+          }
+        }
+      },
+      "Schedule": {
+        "type": "object",
+        "required": [
+          "subject",
+          "teacher",
+          "groups",
+          "semester",
+          "dayOfWeek",
+          "weeksOfMonth",
+          "startTime",
+          "endTime",
+          "lessonType",
+          "classroom"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор расписания"
+          },
+          "subject": {
+            "type": "string",
+            "description": "ID предмета"
+          },
+          "teacher": {
+            "type": "string",
+            "description": "ID преподавателя"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Массив ID групп"
+          },
+          "semester": {
+            "type": "string",
+            "description": "ID семестра"
+          },
+          "dayOfWeek": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "День недели (1 = Понедельник, 7 = Воскресенье)"
+          },
+          "weeksOfMonth": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "description": "Массив недель месяца [1, 2, 3, 4] для повторяющегося расписания"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "Время начала (HH:MM)"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "Время окончания (HH:MM)"
+          },
+          "lessonType": {
+            "type": "string",
+            "enum": [
+              "Лекция",
+              "Практическое занятие",
+              "Лабораторная работа",
+              "Кураторский час",
+              "Зачет",
+              "Экзамен"
+            ],
+            "description": "Тип занятия"
+          },
+          "classroom": {
+            "type": "string",
+            "description": "Номер аудитории"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 40,
+            "maximum": 240,
+            "default": 80,
+            "description": "Продолжительность в минутах"
+          },
+          "isRecurring": {
+            "type": "boolean",
+            "default": true,
+            "description": "Повторяющееся ли расписание"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true,
+            "description": "Активно ли расписание"
+          }
+        }
+      },
+      "ScheduleInstance": {
+        "type": "object",
+        "required": [
+          "schedule",
+          "subject",
+          "teacher",
+          "groups",
+          "semester",
+          "date",
+          "startTime",
+          "endTime",
+          "classroom",
+          "lessonType"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор занятия"
+          },
+          "schedule": {
+            "type": "string",
+            "description": "ID шаблона расписания"
+          },
+          "subject": {
+            "type": "string",
+            "description": "ID предмета"
+          },
+          "teacher": {
+            "type": "string",
+            "description": "ID преподавателя"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Массив ID групп"
+          },
+          "semester": {
+            "type": "string",
+            "description": "ID семестра"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата проведения занятия"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Время начала"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Время окончания"
+          },
+          "classroom": {
+            "type": "string",
+            "description": "Номер аудитории"
+          },
+          "lessonType": {
+            "type": "string",
+            "enum": [
+              "Лекция",
+              "Практическое занятие",
+              "Лабораторная работа",
+              "Кураторский час",
+              "Зачет",
+              "Экзамен"
+            ],
+            "description": "Тип занятия"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["Запланировано", "Проведено", "Отменено", "Перенесено"],
+            "default": "Запланировано",
+            "description": "Статус занятия"
+          },
+          "attendanceMarked": {
+            "type": "boolean",
+            "default": false,
+            "description": "Отмечена ли посещаемость"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Заметки к занятию"
+          },
+          "cancelReason": {
+            "type": "string",
+            "description": "Причина отмены"
+          }
+        }
+      },
+      "Attendance": {
+        "type": "object",
+        "required": [
+          "scheduleInstance",
+          "student",
+          "teacher",
+          "subject",
+          "group",
+          "semester",
+          "date",
+          "lessonType",
+          "markedBy"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор записи посещаемости"
+          },
+          "scheduleInstance": {
+            "type": "string",
+            "description": "ID занятия"
+          },
+          "student": {
+            "type": "string",
+            "description": "ID студента"
+          },
+          "teacher": {
+            "type": "string",
+            "description": "ID преподавателя"
+          },
+          "subject": {
+            "type": "string",
+            "description": "ID предмета"
+          },
+          "group": {
+            "type": "string",
+            "description": "ID группы"
+          },
+          "semester": {
+            "type": "string",
+            "description": "ID семестра"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата занятия"
+          },
+          "lessonType": {
+            "type": "string",
+            "enum": [
+              "Лекция",
+              "Практическое занятие",
+              "Лабораторная работа",
+              "Кураторский час",
+              "Зачет",
+              "Экзамен"
+            ],
+            "description": "Тип занятия"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["Присутствует", "Отсутствует", "Опоздал", "Ушел раньше"],
+            "default": "Отсутствует",
+            "description": "Статус посещения"
+          },
+          "attendedHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0,
+            "description": "Количество посещенных часов"
+          },
+          "missedHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0,
+            "description": "Количество пропущенных часов"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Дополнительные заметки"
+          },
+          "markedBy": {
+            "type": "string",
+            "description": "ID преподавателя, который отметил"
+          },
+          "markedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Время отметки"
+          }
+        }
+      },
+      "Grade": {
+        "type": "object",
+        "required": [
+          "student",
+          "subject",
+          "teacher",
+          "group",
+          "semester",
+          "gradeType",
+          "value",
+          "markedBy"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор оценки"
+          },
+          "student": {
+            "type": "string",
+            "description": "ID студента"
+          },
+          "subject": {
+            "type": "string",
+            "description": "ID предмета"
+          },
+          "teacher": {
+            "type": "string",
+            "description": "ID преподавателя"
+          },
+          "group": {
+            "type": "string",
+            "description": "ID группы"
+          },
+          "semester": {
+            "type": "string",
+            "description": "ID семестра"
+          },
+          "scheduleInstance": {
+            "type": "string",
+            "description": "ID занятия"
+          },
+          "gradeType": {
+            "type": "string",
+            "enum": [
+              "Текущая",
+              "Контрольная",
+              "Лабораторная",
+              "Зачет",
+              "Экзамен"
+            ],
+            "description": "Тип оценки"
+          },
+          "value": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Значение оценки"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата выставления оценки"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Описание оценки"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Заметки к оценке"
+          },
+          "markedBy": {
+            "type": "string",
+            "description": "ID преподавателя, который выставил оценку"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Сообщение об ошибке"
+          },
+          "error": {
+            "type": "string",
+            "description": "Детали ошибки"
+          }
+        }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Ресурс не найден",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Неверный запрос",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Внутренняя ошибка сервера",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Проверка работоспособности API",
+        "tags": ["Общие"],
+        "responses": {
+          "200": {
+            "description": "API работает",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/admin/login": {
+      "post": {
+        "summary": "Авторизация администратора",
+        "tags": ["Авторизация"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email администратора"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Пароль администратора"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешная авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/Admin"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/BadRequest",
+            "description": "Неверные учетные данные"
+          }
+        }
+      }
+    },
+    "/auth/teacher/login": {
+      "post": {
+        "summary": "Авторизация преподавателя",
+        "tags": ["Авторизация"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email преподавателя"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Пароль преподавателя"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешная авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/Teacher"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/BadRequest",
+            "description": "Неверные учетные данные"
+          }
+        }
+      }
+    },
+    "/auth/student/login": {
+      "post": {
+        "summary": "Авторизация студента",
+        "tags": ["Авторизация"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "group", "password"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "ФИО студента"
+                  },
+                  "group": {
+                    "type": "string",
+                    "description": "ID группы"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Пароль студента"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешная авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/BadRequest",
+            "description": "Неверные учетные данные"
+          }
+        }
+      }
+    },
+    "/auth/register-first-admin": {
+      "post": {
+        "summary": "Регистрация первого администратора",
+        "tags": ["Авторизация"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "ФИО администратора"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email администратора"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Пароль администратора"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Администратор успешно создан"
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "403": {
+            "description": "Администратор уже существует"
+          }
+        }
+      }
+    },
+    "/auth/verify": {
+      "get": {
+        "summary": "Проверка токена",
+        "tags": ["Авторизация"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Токен действителен"
+          },
+          "401": {
+            "description": "Токен недействителен"
+          }
+        }
+      }
+    },
+    "/auth/change-password": {
+      "post": {
+        "summary": "Изменение пароля",
+        "tags": ["Авторизация"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "description": "Текущий пароль"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "Новый пароль"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пароль успешно изменен"
+          },
+          "401": {
+            "description": "Неверный текущий пароль"
+          }
+        }
+      }
+    },
+    "/admin/departments": {
+      "get": {
+        "summary": "Получить все кафедры",
+        "tags": ["Администратор - Кафедры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список кафедр",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "departments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Department"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать кафедру",
+        "tags": ["Администратор - Кафедры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "head": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Кафедра успешно создана"
+          },
+          "400": {
+            "description": "Неверные данные"
+          }
+        }
+      }
+    },
+    "/admin/departments/{id}": {
+      "put": {
+        "summary": "Обновить кафедру",
+        "tags": ["Администратор - Кафедры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "head": {
+                    "type": "string"
+                  },
+                  "teachers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Кафедра успешно обновлена"
+          },
+          "404": {
+            "description": "Кафедра не найдена"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить кафедру",
+        "tags": ["Администратор - Кафедры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Кафедра успешно удалена"
+          },
+          "404": {
+            "description": "Кафедра не найдена"
+          }
+        }
+      }
+    },
+    "/admin/teachers": {
+      "get": {
+        "summary": "Получить всех преподавателей",
+        "tags": ["Администратор - Преподаватели"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список преподавателей",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "teachers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Teacher"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать преподавателя",
+        "tags": ["Администратор - Преподаватели"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password", "department"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6
+                  },
+                  "department": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Преподаватель успешно создан"
+          },
+          "400": {
+            "description": "Неверные данные"
+          }
+        }
+      }
+    },
+    "/admin/teachers/{id}": {
+      "put": {
+        "summary": "Обновить преподавателя",
+        "tags": ["Администратор - Преподаватели"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "department": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Преподаватель успешно обновлен"
+          },
+          "404": {
+            "description": "Преподаватель не найден"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить преподавателя",
+        "tags": ["Администратор - Преподаватели"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Преподаватель успешно удален"
+          },
+          "404": {
+            "description": "Преподаватель не найден"
+          }
+        }
+      }
+    },
+    "/admin/subjects": {
+      "get": {
+        "summary": "Получить все предметы",
+        "tags": ["Администратор - Предметы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список предметов"
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать предмет",
+        "tags": ["Администратор - Предметы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "department"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "department": {
+                    "type": "string"
+                  },
+                  "totalHours": {
+                    "type": "object",
+                    "properties": {
+                      "lectureHours": {
+                        "type": "number"
+                      },
+                      "practicalHours": {
+                        "type": "number"
+                      },
+                      "labHours": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Предмет успешно создан"
+          }
+        }
+      }
+    },
+    "/admin/subjects/{id}": {
+      "put": {
+        "summary": "Обновить предмет",
+        "tags": ["Администратор - Предметы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Предмет успешно обновлен"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить предмет",
+        "tags": ["Администратор - Предметы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Предмет успешно удален"
+          }
+        }
+      }
+    },
+    "/admin/groups": {
+      "get": {
+        "summary": "Получить все группы",
+        "tags": ["Администратор - Группы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список групп"
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать группу",
+        "tags": ["Администратор - Группы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "specialty", "course"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "specialty": {
+                    "type": "string"
+                  },
+                  "course": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Группа успешно создана"
+          }
+        }
+      }
+    },
+    "/admin/groups/{groupId}/import-students": {
+      "post": {
+        "summary": "Импорт студентов в группу из Excel",
+        "tags": ["Администратор - Группы"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Excel файл со студентами (ФИО, пароль)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Импорт завершен"
+          }
+        }
+      }
+    },
+    "/admin/semesters": {
+      "get": {
+        "summary": "Получить все семестры",
+        "tags": ["Администратор - Семестры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список семестров"
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать семестр",
+        "tags": ["Администратор - Семестры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "year", "startDate", "endDate"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "enum": ["Осенний", "Весенний"]
+                  },
+                  "year": {
+                    "type": "number"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "examStartDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "examEndDate": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Семестр успешно создан"
+          }
+        }
+      }
+    },
+    "/admin/semesters/{id}/activate": {
+      "post": {
+        "summary": "Активировать семестр",
+        "tags": ["Администратор - Семестры"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Семестр активирован"
+          }
+        }
+      }
+    },
+    "/schedules": {
+      "get": {
+        "summary": "Получить все расписания",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacherId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список расписаний"
+          }
+        }
+      },
+      "post": {
+        "summary": "Создать расписание",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Schedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Расписание создано"
+          }
+        }
+      }
+    },
+    "/schedules/{id}": {
+      "put": {
+        "summary": "Обновить расписание",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание обновлено"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Удалить расписание",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание удалено"
+          }
+        }
+      }
+    },
+    "/schedule-instances": {
+      "get": {
+        "summary": "Получить занятия",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teacherId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список занятий"
+          }
+        }
+      }
+    },
+    "/schedule-instances/{id}": {
+      "put": {
+        "summary": "Обновить занятие",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Занятие обновлено"
+          }
+        }
+      }
+    },
+    "/schedule-instances/{id}/cancel": {
+      "post": {
+        "summary": "Отменить занятие",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cancelReason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Занятие отменено"
+          }
+        }
+      }
+    },
+    "/schedules/stats": {
+      "get": {
+        "summary": "Статистика расписания",
+        "tags": ["Расписание"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика расписания"
+          }
+        }
+      }
+    },
+    "/teacher/schedule": {
+      "get": {
+        "summary": "Получить расписание преподавателя",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание преподавателя"
+          }
+        }
+      }
+    },
+    "/teacher/schedule/today": {
+      "get": {
+        "summary": "Расписание на сегодня",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание на сегодня"
+          }
+        }
+      }
+    },
+    "/teacher/lessons/{scheduleInstanceId}/students": {
+      "get": {
+        "summary": "Получить список студентов на занятии",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scheduleInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список студентов"
+          }
+        }
+      }
+    },
+    "/teacher/lessons/{scheduleInstanceId}/attendance": {
+      "post": {
+        "summary": "Отметить посещаемость",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scheduleInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["attendanceData"],
+                "properties": {
+                  "attendanceData": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "studentId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Присутствует",
+                            "Отсутствует",
+                            "Опоздал",
+                            "Ушел раньше"
+                          ]
+                        },
+                        "attendedHours": {
+                          "type": "number"
+                        },
+                        "missedHours": {
+                          "type": "number"
+                        },
+                        "notes": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Посещаемость отмечена"
+          }
+        }
+      }
+    },
+    "/teacher/lessons/{scheduleInstanceId}/grades": {
+      "post": {
+        "summary": "Выставить оценки",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scheduleInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["gradesData"],
+                "properties": {
+                  "gradesData": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "studentId": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 10
+                        },
+                        "gradeType": {
+                          "type": "string",
+                          "enum": [
+                            "Текущая",
+                            "Контрольная",
+                            "Лабораторная",
+                            "Зачет",
+                            "Экзамен"
+                          ]
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "notes": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Оценки выставлены"
+          }
+        }
+      }
+    },
+    "/teacher/stats": {
+      "get": {
+        "summary": "Статистика преподавателя",
+        "tags": ["Преподаватель"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика преподавателя"
+          }
+        }
+      }
+    },
+    "/student/schedule": {
+      "get": {
+        "summary": "Получить расписание студента",
+        "tags": ["Студент"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание студента"
+          }
+        }
+      }
+    },
+    "/student/schedule/today": {
+      "get": {
+        "summary": "Расписание студента на сегодня",
+        "tags": ["Студент"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание на сегодня"
+          }
+        }
+      }
+    },
+    "/student/attendance": {
+      "get": {
+        "summary": "Получить посещаемость студента",
+        "tags": ["Студент"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Посещаемость студента"
+          }
+        }
+      }
+    },
+    "/student/grades": {
+      "get": {
+        "summary": "Получить оценки студента",
+        "tags": ["Студент"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Оценки студента"
+          }
+        }
+      }
+    },
+    "/student/stats": {
+      "get": {
+        "summary": "Статистика студента",
+        "tags": ["Студент"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика студента"
+          }
+        }
+      }
+    },
+    "/reports/attendance/excel": {
+      "get": {
+        "summary": "Скачать отчет посещаемости (Excel)",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lessonType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Лекция",
+                "Практическое занятие",
+                "Лабораторная работа",
+                "Кураторский час"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel файл с отчетом",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/grades/excel": {
+      "get": {
+        "summary": "Скачать отчет оценок (Excel)",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gradeType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Текущая",
+                "Контрольная",
+                "Лабораторная",
+                "Зачет",
+                "Экзамен"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel файл с отчетом",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/group/attendance": {
+      "get": {
+        "summary": "Статистика посещаемости группы",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика посещаемости группы"
+          }
+        }
+      }
+    },
+    "/reports/group/grades": {
+      "get": {
+        "summary": "Статистика оценок группы",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика оценок группы"
+          }
+        }
+      }
+    },
+    "/reports/student/{studentId}/analytics": {
+      "get": {
+        "summary": "Аналитика студента",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Аналитика студента"
+          }
+        }
+      }
+    },
+    "/reports/semester/{semesterId}/analytics": {
+      "get": {
+        "summary": "Аналитика семестра",
+        "tags": ["Отчеты"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Аналитика семестра"
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

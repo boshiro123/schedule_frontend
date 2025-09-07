@@ -1,0 +1,2493 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Электронный журнал посещаемости API",
+    "version": "1.0.0",
+    "description": "API для системы учета посещаемости студентов в университете",
+    "contact": {
+      "name": "Система поддержки",
+      "email": "support@university.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Локальный сервер разработки"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Student": {
+        "type": "object",
+        "required": ["name", "rollNum", "password", "sclassName", "school"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор студента"
+          },
+          "name": { "type": "string", "description": "ФИО студента" },
+          "rollNum": {
+            "type": "number",
+            "description": "Номер зачетной книжки"
+          },
+          "password": { "type": "string", "description": "Пароль студента" },
+          "sclassName": { "type": "string", "description": "ID группы" },
+          "role": {
+            "type": "string",
+            "default": "Student",
+            "description": "Роль пользователя"
+          }
+        }
+      },
+      "Teacher": {
+        "type": "object",
+        "required": ["name", "email", "password", "school", "teachSclass"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор преподавателя"
+          },
+          "name": { "type": "string", "description": "ФИО преподавателя" },
+          "email": { "type": "string", "description": "Email преподавателя" },
+          "password": {
+            "type": "string",
+            "description": "Пароль преподавателя"
+          },
+          "teachSubject": {
+            "type": "string",
+            "description": "ID преподаваемого предмета"
+          },
+          "teachSclass": { "type": "string", "description": "ID группы" }
+        }
+      },
+      "Subject": {
+        "type": "object",
+        "required": ["subName", "subCode", "sessions", "sclassName"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор предмета"
+          },
+          "subName": { "type": "string", "description": "Название предмета" },
+          "subCode": { "type": "string", "description": "Код предмета" },
+          "sessions": { "type": "string", "description": "Количество занятий" },
+          "lectureHours": {
+            "type": "number",
+            "description": "Количество часов лекций"
+          },
+          "practicalHours": {
+            "type": "number",
+            "description": "Количество часов практических занятий"
+          },
+          "labHours": {
+            "type": "number",
+            "description": "Количество часов лабораторных работ"
+          },
+          "sclassName": { "type": "string", "description": "ID группы" },
+          "teacher": { "type": "string", "description": "ID преподавателя" }
+        }
+      },
+      "Semester": {
+        "type": "object",
+        "required": ["name", "year", "startDate", "endDate", "school"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор семестра"
+          },
+          "name": {
+            "type": "string",
+            "enum": ["Осенний", "Весенний"],
+            "description": "Название семестра"
+          },
+          "year": { "type": "number", "description": "Учебный год" },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата начала семестра"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата окончания семестра"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": false,
+            "description": "Является ли семестр активным"
+          }
+        }
+      },
+      "Schedule": {
+        "type": "object",
+        "required": [
+          "subject",
+          "teacher",
+          "sclass",
+          "semester",
+          "date",
+          "startTime",
+          "endTime",
+          "lessonType",
+          "classroom",
+          "duration",
+          "school"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор занятия"
+          },
+          "subject": { "type": "string", "description": "ID предмета" },
+          "teacher": { "type": "string", "description": "ID преподавателя" },
+          "sclass": { "type": "string", "description": "ID группы" },
+          "semester": { "type": "string", "description": "ID семестра" },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата занятия"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "Время начала (HH:MM)"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "Время окончания (HH:MM)"
+          },
+          "lessonType": {
+            "type": "string",
+            "enum": [
+              "Лекция",
+              "Практическое занятие",
+              "Лабораторная работа",
+              "Кураторский час"
+            ],
+            "description": "Тип занятия"
+          },
+          "classroom": { "type": "string", "description": "Номер аудитории" },
+          "duration": {
+            "type": "number",
+            "minimum": 40,
+            "maximum": 240,
+            "default": 80,
+            "description": "Продолжительность в минутах (стандартная пара = 80 минут)"
+          },
+          "dayOfWeek": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "День недели (0 = Воскресенье, 1 = Понедельник, ..., 6 = Суббота)"
+          },
+          "weekOfMonth": {
+            "type": "array",
+            "items": { "type": "number", "minimum": 1, "maximum": 4 },
+            "description": "Массив недель месяца [1, 2, 3, 4] для повторяющегося расписания"
+          },
+          "isRecurring": {
+            "type": "boolean",
+            "default": false,
+            "description": "Повторяющееся ли расписание (true) или разовое занятие (false)"
+          },
+          "isCompleted": {
+            "type": "boolean",
+            "default": false,
+            "description": "Завершено ли занятие"
+          }
+        }
+      },
+      "Attendance": {
+        "type": "object",
+        "required": [
+          "schedule",
+          "student",
+          "status",
+          "teacher",
+          "subject",
+          "sclass",
+          "semester",
+          "lessonType",
+          "date",
+          "school"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Уникальный идентификатор записи посещаемости"
+          },
+          "schedule": { "type": "string", "description": "ID занятия" },
+          "student": { "type": "string", "description": "ID студента" },
+          "status": {
+            "type": "string",
+            "enum": ["Присутствует", "Отсутствует"],
+            "description": "Статус посещения"
+          },
+          "missedHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0,
+            "description": "Количество пропущенных часов"
+          },
+          "teacher": { "type": "string", "description": "ID преподавателя" },
+          "subject": { "type": "string", "description": "ID предмета" },
+          "sclass": { "type": "string", "description": "ID группы" },
+          "semester": { "type": "string", "description": "ID семестра" },
+          "lessonType": {
+            "type": "string",
+            "enum": [
+              "Лекция",
+              "Практическое занятие",
+              "Лабораторная работа",
+              "Кураторский час"
+            ],
+            "description": "Тип занятия"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата занятия"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Дополнительные заметки"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "description": "Сообщение об ошибке" },
+          "error": { "type": "string", "description": "Детали ошибки" }
+        }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Ресурс не найден",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Неверный запрос",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Внутренняя ошибка сервера",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Проверка статуса сервера",
+        "tags": ["Система"],
+        "responses": {
+          "200": {
+            "description": "Сервер работает",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Message": { "type": "string" },
+                    "Backend": { "type": "string" },
+                    "ProjectName": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-docs.json": {
+      "get": {
+        "summary": "Экспорт документации API в JSON формате",
+        "tags": ["Система"],
+        "description": "Возвращает полную спецификацию OpenAPI в JSON формате для интеграции с внешними инструментами",
+        "responses": {
+          "200": {
+            "description": "JSON спецификация OpenAPI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "openapi": { "type": "string", "example": "3.0.0" },
+                    "info": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "example": "Электронный журнал посещаемости API"
+                        },
+                        "version": { "type": "string", "example": "1.0.0" },
+                        "description": {
+                          "type": "string",
+                          "example": "API для системы учета посещаемости студентов в университете"
+                        }
+                      }
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    },
+                    "components": { "type": "object" },
+                    "paths": {
+                      "type": "object",
+                      "description": "Все доступные эндпоинты API с полным описанием"
+                    }
+                  }
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Успешный экспорт",
+                    "value": {
+                      "openapi": "3.0.0",
+                      "info": {
+                        "title": "Электронный журнал посещаемости API",
+                        "version": "1.0.0"
+                      },
+                      "paths": { "/": {}, "/AdminReg": {} }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ошибка при экспорте документации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Ошибка при генерации документации"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-info": {
+      "get": {
+        "summary": "Получить информацию о API",
+        "tags": ["Система"],
+        "description": "Возвращает краткую информацию о API, количество эндпоинтов и доступные теги",
+        "responses": {
+          "200": {
+            "description": "Информация о API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "example": "Электронный журнал посещаемости API"
+                    },
+                    "version": { "type": "string", "example": "1.0.0" },
+                    "description": {
+                      "type": "string",
+                      "example": "API для системы учета посещаемости студентов в университете"
+                    },
+                    "totalEndpoints": { "type": "number", "example": 69 },
+                    "availableTags": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "example": [
+                        "Система",
+                        "Администратор",
+                        "Студенты",
+                        "Преподаватели"
+                      ]
+                    },
+                    "swaggerUI": {
+                      "type": "string",
+                      "example": "http://localhost:3001/api-docs"
+                    },
+                    "jsonExport": {
+                      "type": "string",
+                      "example": "http://localhost:3001/api-docs.json"
+                    },
+                    "generatedAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AdminReg": {
+      "post": {
+        "summary": "Регистрация администратора",
+        "tags": ["Администратор"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schoolName", "email", "password"],
+                "properties": {
+                  "schoolName": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Администратор успешно зарегистрирован" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AdminLogin": {
+      "post": {
+        "summary": "Вход администратора",
+        "tags": ["Администратор"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Успешный вход" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Admin/{id}": {
+      "get": {
+        "summary": "Получить данные администратора",
+        "tags": ["Администратор"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID администратора"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Данные администратора" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/register/newadmin": {
+      "post": {
+        "summary": "Регистрация нового администратора (только для админов)",
+        "tags": ["Администратор"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schoolName", "email", "password"],
+                "properties": {
+                  "schoolName": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Новый администратор зарегистрирован" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentReg": {
+      "post": {
+        "summary": "Регистрация студентов через Excel файл",
+        "tags": ["Студенты"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Excel файл со списком студентов"
+                  },
+                  "sclassName": {
+                    "type": "string",
+                    "description": "ID группы"
+                  },
+                  "school": {
+                    "type": "string",
+                    "description": "ID учебного заведения"
+                  },
+                  "role": { "type": "string", "default": "Student" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Студенты успешно зарегистрированы" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentLogin": {
+      "post": {
+        "summary": "Вход студента",
+        "tags": ["Студенты"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rollNum", "studentName", "password"],
+                "properties": {
+                  "rollNum": { "type": "number" },
+                  "studentName": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Успешный вход студента" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Students/{id}": {
+      "get": {
+        "summary": "Получить всех студентов учебного заведения",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список студентов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Student" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить всех студентов учебного заведения",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Студенты удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Student/{id}": {
+      "get": {
+        "summary": "Получить данные студента",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные студента",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Student" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "put": {
+        "summary": "Обновить данные студента",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Student" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Студент обновлен" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить студента",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Студент удален" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentsClass/{id}": {
+      "delete": {
+        "summary": "Удалить всех студентов группы",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Студенты группы удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/UpdateExamResult/{id}": {
+      "put": {
+        "summary": "Обновить результаты экзамена студента",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subName": { "type": "string" },
+                  "marksObtained": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Результат экзамена обновлен" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentAttendance/{id}": {
+      "put": {
+        "summary": "Отметить посещаемость студента (старая система)",
+        "tags": ["Студенты"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subName": { "type": "string" },
+                  "status": { "type": "string" },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Посещаемость отмечена" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/assign": {
+      "put": {
+        "summary": "Назначить преподавателя на предмет и группу",
+        "tags": ["Преподаватели"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teacherId": { "type": "string" },
+                  "subjectId": { "type": "string" },
+                  "classId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Преподаватель назначен" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherReg": {
+      "post": {
+        "summary": "Регистрация преподавателя",
+        "tags": ["Преподаватели"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Teacher" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Преподаватель зарегистрирован",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherLogin": {
+      "post": {
+        "summary": "Вход преподавателя",
+        "tags": ["Преподаватели"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Успешный вход преподавателя" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Teachers/{id}": {
+      "get": {
+        "summary": "Получить всех преподавателей учебного заведения",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список преподавателей",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Teacher" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить всех преподавателей учебного заведения",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Преподаватели удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Teacher/{id}": {
+      "get": {
+        "summary": "Получить данные преподавателя",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные преподавателя",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить преподавателя",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Преподаватель удален" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "put": {
+        "summary": "Обновить данные преподавателя",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Teacher" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Преподаватель обновлен",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeachersClass/{id}": {
+      "delete": {
+        "summary": "Удалить всех преподавателей группы",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Преподаватели группы удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherSubject": {
+      "put": {
+        "summary": "Обновить предмет преподавателя",
+        "tags": ["Преподаватели"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teacherId": { "type": "string" },
+                  "subjectId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Предмет преподавателя обновлен" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherAttendance/{id}": {
+      "post": {
+        "summary": "Отметить посещаемость преподавателя",
+        "tags": ["Преподаватели"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string", "format": "date" },
+                  "presentCount": { "type": "string" },
+                  "absentCount": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Посещаемость преподавателя отмечена" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/NoticeCreate": {
+      "post": {
+        "summary": "Создать уведомление",
+        "tags": ["Уведомления"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "details", "school"],
+                "properties": {
+                  "title": { "type": "string" },
+                  "details": { "type": "string" },
+                  "school": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Уведомление создано" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/NoticeList/{id}": {
+      "get": {
+        "summary": "Получить список уведомлений",
+        "tags": ["Уведомления"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "title": { "type": "string" },
+                      "details": { "type": "string" },
+                      "school": { "type": "string" },
+                      "createdAt": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Notices/{id}": {
+      "delete": {
+        "summary": "Удалить все уведомления учебного заведения",
+        "tags": ["Уведомления"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Уведомления удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Notice/{id}": {
+      "delete": {
+        "summary": "Удалить уведомление",
+        "tags": ["Уведомления"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID уведомления"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Уведомление удалено" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "put": {
+        "summary": "Обновить уведомление",
+        "tags": ["Уведомления"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID уведомления"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "details": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Уведомление обновлено" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ComplainCreate": {
+      "post": {
+        "summary": "Создать жалобу",
+        "tags": ["Жалобы"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user", "complaint", "school"],
+                "properties": {
+                  "user": { "type": "string" },
+                  "complaint": { "type": "string" },
+                  "school": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Жалоба создана" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ComplainList/{id}": {
+      "get": {
+        "summary": "Получить список жалоб",
+        "tags": ["Жалобы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список жалоб",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "user": { "type": "string" },
+                      "complaint": { "type": "string" },
+                      "school": { "type": "string" },
+                      "createdAt": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/SclassCreate": {
+      "post": {
+        "summary": "Создать группу",
+        "tags": ["Группы"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["sclassName", "school"],
+                "properties": {
+                  "sclassName": { "type": "string" },
+                  "school": { "type": "string" },
+                  "specialty": { "type": "string" },
+                  "faculty": { "type": "string" },
+                  "courseNumber": { "type": "string" },
+                  "department": { "type": "string" },
+                  "studyForm": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Группа создана" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/SclassList/{id}": {
+      "get": {
+        "summary": "Получить список групп",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список групп",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "sclassName": { "type": "string" },
+                      "school": { "type": "string" },
+                      "specialty": { "type": "string" },
+                      "faculty": { "type": "string" },
+                      "courseNumber": { "type": "string" },
+                      "department": { "type": "string" },
+                      "studyForm": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Sclass/{id}": {
+      "get": {
+        "summary": "Получить данные группы",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Данные группы" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить группу",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Группа удалена" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "put": {
+        "summary": "Обновить данные группы",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sclassName": { "type": "string" },
+                  "specialty": { "type": "string" },
+                  "faculty": { "type": "string" },
+                  "courseNumber": { "type": "string" },
+                  "department": { "type": "string" },
+                  "studyForm": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Группа обновлена" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Sclass/Students/{id}": {
+      "get": {
+        "summary": "Получить студентов группы",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список студентов группы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Student" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Sclasses/{id}": {
+      "delete": {
+        "summary": "Удалить все группы учебного заведения",
+        "tags": ["Группы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Группы удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/SubjectCreate": {
+      "post": {
+        "summary": "Создать предмет",
+        "tags": ["Предметы"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Subject" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Предмет создан",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Subject" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AllSubjects/{id}": {
+      "get": {
+        "summary": "Получить все предметы учебного заведения",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список всех предметов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Subject" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ClassSubjects/{id}": {
+      "get": {
+        "summary": "Получить предметы группы",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список предметов группы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Subject" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/FreeSubjectList/{id}": {
+      "get": {
+        "summary": "Получить свободные предметы (без назначенного преподавателя)",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список свободных предметов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Subject" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Subject/{id}": {
+      "get": {
+        "summary": "Получить данные предмета",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID предмета"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные предмета",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Subject" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить предмет",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID предмета"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Предмет удален" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Subjects/{id}": {
+      "delete": {
+        "summary": "Удалить все предметы учебного заведения",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID учебного заведения"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Предметы удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/SubjectsClass/{id}": {
+      "delete": {
+        "summary": "Удалить все предметы группы",
+        "tags": ["Предметы"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Предметы группы удалены" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/SemesterCreate": {
+      "post": {
+        "summary": "Создать новый семестр",
+        "tags": ["Семестры"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Semester" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Семестр успешно создан",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Semester" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Semesters/{schoolId}": {
+      "get": {
+        "summary": "Получить все семестры учебного заведения",
+        "tags": ["Семестры"],
+        "parameters": [{ "in": "path" }],
+        "responses": {
+          "200": {
+            "description": "Список семестров",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Semester" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ActiveSemester/{schoolId}": {
+      "get": {
+        "summary": "Получить активный семестр",
+        "tags": ["Семестры"],
+        "parameters": [{ "in": "path" }],
+        "responses": {
+          "200": {
+            "description": "Активный семестр",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Semester" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ScheduleCreate": {
+      "post": {
+        "summary": "Создать новое занятие в расписании",
+        "tags": ["Расписание"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Schedule" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Занятие успешно создано",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Schedule" }
+              }
+            }
+          },
+          "400": {
+            "description": "Конфликт расписания",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "conflicts": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Schedule/{schoolId}": {
+      "get": {
+        "summary": "Получить расписание",
+        "tags": ["Расписание"],
+        "parameters": [
+          { "in": "path" },
+          {
+            "in": "query",
+            "name": "date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата занятий"
+          },
+          {
+            "in": "query",
+            "name": "sclass",
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          },
+          {
+            "in": "query",
+            "name": "teacher",
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список занятий",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Schedule" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/CheckScheduleConflicts": {
+      "post": {
+        "summary": "Проверить конфликты расписания",
+        "tags": ["Расписание"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string", "format": "date" },
+                  "startTime": { "type": "string" },
+                  "endTime": { "type": "string" },
+                  "classroom": { "type": "string" },
+                  "teacher": { "type": "string" },
+                  "sclass": { "type": "string" },
+                  "school": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Результат проверки конфликтов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hasConflict": { "type": "boolean" },
+                    "conflicts": { "type": "array" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ScheduleRange/{schoolId}": {
+      "get": {
+        "summary": "Получить расписание за период",
+        "tags": ["Расписание"],
+        "parameters": [
+          { "in": "path" },
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата начала периода"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата окончания периода"
+          },
+          {
+            "in": "query",
+            "name": "sclass",
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          },
+          {
+            "in": "query",
+            "name": "teacher",
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание за период",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Schedule" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/Schedule/{scheduleId}": {
+      "put": {
+        "summary": "Обновить занятие в расписании",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scheduleId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID занятия"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Schedule" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Занятие обновлено",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Schedule" }
+              }
+            }
+          },
+          "400": { "description": "Конфликт расписания" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      },
+      "delete": {
+        "summary": "Удалить занятие из расписания",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scheduleId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID занятия"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Занятие удалено" },
+          "400": {
+            "description": "Нельзя удалить занятие с отмеченной посещаемостью"
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/MarkAttendance/{scheduleId}": {
+      "post": {
+        "summary": "Отметить посещаемость для занятия",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scheduleId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID занятия"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attendanceData": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "studentId": { "type": "string" },
+                        "status": {
+                          "type": "string",
+                          "enum": ["Присутствует", "Отсутствует"]
+                        },
+                        "missedHours": { "type": "number" },
+                        "notes": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Посещаемость отмечена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "results": { "type": "array" },
+                    "schedule": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AttendanceReport/{classId}/{subjectId}/{semesterId}/{lessonType}": {
+      "get": {
+        "summary": "Сгенерировать отчет о посещаемости в Excel",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          },
+          {
+            "in": "path",
+            "name": "subjectId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID предмета"
+          },
+          {
+            "in": "path",
+            "name": "semesterId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          },
+          {
+            "in": "path",
+            "name": "lessonType",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "Лекция",
+                "Практическое занятие",
+                "Лабораторная работа",
+                "Кураторский час"
+              ]
+            },
+            "description": "Тип занятия или 'all' для всех типов"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата начала периода"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата окончания периода"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Отчет сгенерирован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "fileName": { "type": "string" },
+                    "downloadUrl": { "type": "string" },
+                    "summary": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AttendanceBySchedule/{scheduleId}": {
+      "get": {
+        "summary": "Получить посещаемость по занятию",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scheduleId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID занятия"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Посещаемость по занятию",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Attendance" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentAttendance/{studentId}": {
+      "get": {
+        "summary": "Получить посещаемость студента",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "studentId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "schema": { "type": "string" },
+            "description": "ID предмета"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Посещаемость студента",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Attendance" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/ClassAttendance/{classId}": {
+      "get": {
+        "summary": "Получить посещаемость группы",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID группы"
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "schema": { "type": "string" },
+            "description": "ID предмета"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата начала периода"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата окончания периода"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Посещаемость группы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Attendance" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/AttendanceMark/{attendanceId}": {
+      "delete": {
+        "summary": "Удалить отметку посещаемости",
+        "tags": ["Посещаемость"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attendanceId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID записи посещаемости"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Отметка посещаемости удалена" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherSchedule/{teacherId}": {
+      "get": {
+        "summary": "Получить расписание преподавателя",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "teacherId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Конкретная дата"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата начала периода"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата окончания периода"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание преподавателя",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "teacher": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "email": { "type": "string" }
+                      }
+                    },
+                    "schedules": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Schedule" }
+                    },
+                    "totalLessons": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/TeacherWeeklySchedule/{teacherId}": {
+      "get": {
+        "summary": "Получить недельное расписание преподавателя",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "teacherId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID преподавателя"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Недельное расписание преподавателя",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "teacher": { "type": "object" },
+                    "weekPeriod": {
+                      "type": "object",
+                      "properties": {
+                        "start": { "type": "string", "format": "date" },
+                        "end": { "type": "string", "format": "date" }
+                      }
+                    },
+                    "weekSchedule": {
+                      "type": "object",
+                      "description": "Расписание по дням недели"
+                    },
+                    "totalLessonsThisWeek": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentSchedule/{studentId}": {
+      "get": {
+        "summary": "Получить расписание студента",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "studentId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "schema": { "type": "string" },
+            "description": "ID семестра"
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Конкретная дата"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата начала периода"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Дата окончания периода"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Расписание студента",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "student": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "rollNum": { "type": "number" },
+                        "class": { "type": "string" }
+                      }
+                    },
+                    "schedules": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Schedule" }
+                    },
+                    "totalLessons": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/StudentWeeklySchedule/{studentId}": {
+      "get": {
+        "summary": "Получить недельное расписание студента",
+        "tags": ["Расписание"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "studentId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID студента"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Недельное расписание студента",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "student": { "type": "object" },
+                    "weekPeriod": {
+                      "type": "object",
+                      "properties": {
+                        "start": { "type": "string", "format": "date" },
+                        "end": { "type": "string", "format": "date" }
+                      }
+                    },
+                    "weekSchedule": {
+                      "type": "object",
+                      "description": "Расписание по дням недели"
+                    },
+                    "totalLessonsThisWeek": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  },
+  "tags": []
+}
