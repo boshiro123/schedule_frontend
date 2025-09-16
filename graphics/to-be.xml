@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:activiti="http://activiti.org/bpmn"
+  id="Definitions_1" targetNamespace="http://example.com/bpmn">
+
+  <bpmn:process id="TO_BE_Process" name="TO-BE: Интеллектуальная система учета посещаемости"
+    isExecutable="false">
+
+    <!-- Дорожки (swimlanes) -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Student" name="Студент">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutoAttendance</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_Teacher" name="Преподаватель">
+        <bpmn:flowNodeRef>Task_ReviewAnalytics</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Feedback</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_System" name="Интеллектуальная система">
+        <bpmn:flowNodeRef>Event_LessonStart</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AutoCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AIProcessing</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AutoReports</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PredictiveAnalytics</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotificationSystem</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_Deanery" name="Деканат">
+        <bpmn:flowNodeRef>Task_Monitoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DecisionMaking</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Элементы процесса -->
+    <bpmn:startEvent id="StartEvent_1" name="Начало учебного дня" />
+
+    <bpmn:intermediateCatchEvent id="Event_LessonStart" name="Начало занятия">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT0M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:task id="Task_AutoAttendance" name="Автоматическая отметка по геолокации/QR-коду" />
+
+    <bpmn:exclusiveGateway id="Gateway_AutoCheck" name="Проверка присутствия" />
+
+    <bpmn:task id="Task_AIProcessing" name="ИИ-анализ данных в реальном времени" />
+
+    <bpmn:task id="Task_AutoReports" name="Автогенерация отчетов и статистики" />
+
+    <bpmn:task id="Task_PredictiveAnalytics" name="Прогнозная аналитика успеваемости" />
+
+    <bpmn:task id="Task_NotificationSystem" name="Уведомления стуентам и преподавателям" />
+
+    <bpmn:task id="Task_ReviewAnalytics" name="Обзор аналитики и корректировка" />
+
+    <bpmn:task id="Task_Feedback" name="Обратная связь студентам" />
+
+    <bpmn:task id="Task_Monitoring" name="Мониторинг показателей в реальном времени" />
+
+    <bpmn:task id="Task_DecisionMaking" name="Принятие управленческих решений" />
+
+    <bpmn:endEvent id="EndEvent_1" name="Конец учебного процесса" />
+
+    <!-- Потоки выполнения -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Event_LessonStart" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Event_LessonStart" targetRef="Task_AutoAttendance" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_AutoAttendance" targetRef="Gateway_AutoCheck" />
+
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Gateway_AutoCheck" targetRef="Task_AIProcessing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${attendanceConfirmed}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Gateway_AutoCheck" targetRef="Task_NotificationSystem">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!attendanceConfirmed}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_AIProcessing" targetRef="Task_AutoReports" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_AutoReports" targetRef="Task_PredictiveAnalytics" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_PredictiveAnalytics"
+      targetRef="Task_ReviewAnalytics" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_ReviewAnalytics" targetRef="Task_Feedback" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_Feedback" targetRef="Task_Monitoring" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_Monitoring" targetRef="Task_DecisionMaking" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_DecisionMaking" targetRef="EndEvent_1" />
+
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_NotificationSystem"
+      targetRef="Task_AIProcessing" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="TO_BE_Process">
+
+      <!-- Дорожки -->
+      <bpmndi:BPMNShape id="Lane_Student_di" bpmnElement="Lane_Student" isHorizontal="true">
+        <dc:Bounds x="50" y="50" width="1400" height="120" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_Teacher_di" bpmnElement="Lane_Teacher" isHorizontal="true">
+        <dc:Bounds x="50" y="170" width="1400" height="120" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true">
+        <dc:Bounds x="50" y="290" width="1400" height="150" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_Deanery_di" bpmnElement="Lane_Deanery" isHorizontal="true">
+        <dc:Bounds x="50" y="440" width="1400" height="120" />
+      </bpmndi:BPMNShape>
+
+      <!-- Элементы на дорожках -->
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="StartEvent_1">
+        <dc:Bounds x="100" y="80" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_EventLesson" bpmnElement="Event_LessonStart">
+        <dc:Bounds x="200" y="325" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_AutoAttendance" bpmnElement="Task_AutoAttendance">
+        <dc:Bounds x="280" y="80" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Gateway" bpmnElement="Gateway_AutoCheck">
+        <dc:Bounds x="520" y="325" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_AIProcessing" bpmnElement="Task_AIProcessing">
+        <dc:Bounds x="620" y="325" width="180" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_AutoReports" bpmnElement="Task_AutoReports">
+        <dc:Bounds x="850" y="325" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Predictive" bpmnElement="Task_PredictiveAnalytics">
+        <dc:Bounds x="1100" y="325" width="180" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Notifications" bpmnElement="Task_NotificationSystem">
+        <dc:Bounds x="620" y="200" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Review" bpmnElement="Task_ReviewAnalytics">
+        <dc:Bounds x="850" y="200" width="180" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Feedback" bpmnElement="Task_Feedback">
+        <dc:Bounds x="1100" y="200" width="160" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Monitoring" bpmnElement="Task_Monitoring">
+        <dc:Bounds x="850" y="470" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Decision" bpmnElement="Task_DecisionMaking">
+        <dc:Bounds x="1100" y="470" width="220" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1350" y="470" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Соединения -->
+      <bpmndi:BPMNEdge id="Flow_1_edge" bpmnElement="Flow_1">
+        <di:waypoint x="118" y="98" />
+        <di:waypoint x="218" y="343" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_2_edge" bpmnElement="Flow_2">
+        <di:waypoint x="236" y="343" />
+        <di:waypoint x="280" y="110" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_3_edge" bpmnElement="Flow_3">
+        <di:waypoint x="380" y="110" />
+        <di:waypoint x="520" y="350" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_4_edge" bpmnElement="Flow_4">
+        <di:waypoint x="545" y="350" />
+        <di:waypoint x="620" y="355" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_5_edge" bpmnElement="Flow_5">
+        <di:waypoint x="520" y="300" />
+        <di:waypoint x="620" y="230" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_6_edge" bpmnElement="Flow_6">
+        <di:waypoint x="800" y="355" />
+        <di:waypoint x="850" y="355" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_7_edge" bpmnElement="Flow_7">
+        <di:waypoint x="1050" y="355" />
+        <di:waypoint x="1100" y="355" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_8_edge" bpmnElement="Flow_8">
+        <di:waypoint x="1190" y="355" />
+        <di:waypoint x="1190" y="290" />
+        <di:waypoint x="940" y="230" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_9_edge" bpmnElement="Flow_9">
+        <di:waypoint x="940" y="170" />
+        <di:waypoint x="1100" y="170" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_10_edge" bpmnElement="Flow_10">
+        <di:waypoint x="1180" y="200" />
+        <di:waypoint x="1180" y="440" />
+        <di:waypoint x="950" y="500" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_11_edge" bpmnElement="Flow_11">
+        <di:waypoint x="1050" y="500" />
+        <di:waypoint x="1100" y="500" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_12_edge" bpmnElement="Flow_12">
+        <di:waypoint x="1320" y="500" />
+        <di:waypoint x="1350" y="500" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_13_edge" bpmnElement="Flow_13">
+        <di:waypoint x="720" y="170" />
+        <di:waypoint x="720" y="290" />
+        <di:waypoint x="710" y="325" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

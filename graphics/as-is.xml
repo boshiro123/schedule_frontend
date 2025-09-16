@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:activiti="http://activiti.org/bpmn"
+  id="Definitions_1" targetNamespace="http://example.com/bpmn">
+
+  <bpmn:process id="AS_IS_Process" name="AS-IS: Учет посещаемости (Электронный журнал)"
+    isExecutable="false">
+
+    <!-- Дорожки (swimlanes) -->
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Student" name="Студент">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_Teacher" name="Преподаватель">
+        <bpmn:flowNodeRef>Task_2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_3</bpmn:flowNodeRef>
+      </bpmn:lane>
+
+      <bpmn:lane id="Lane_System" name="Система">
+        <bpmn:flowNodeRef>Task_4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <!-- Элементы процесса -->
+    <bpmn:startEvent id="StartEvent_1" name="Начало занятия" />
+
+    <bpmn:task id="Task_1" name="Студент отмечается через систему" />
+
+    <bpmn:task id="Task_2" name="Преподаватель проверяет посещаемость" />
+
+    <bpmn:task id="Task_3" name="Преподаватель вносит оценки и комментарии" />
+
+    <bpmn:task id="Task_4" name="Система автоматически фиксирует данные" />
+
+    <bpmn:task id="Task_5" name="Система генерирует отчеты в реальном времени" />
+
+    <bpmn:task id="Task_6" name="Система предоставляет аналитику посещаемости" />
+
+    <bpmn:endEvent id="EndEvent_1" name="Конец" />
+
+    <!-- Потоки выполнения -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="Task_2" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_2" targetRef="Task_3" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_3" targetRef="Task_4" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_4" targetRef="Task_5" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_5" targetRef="Task_6" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_6" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="AS_IS_Process">
+
+      <!-- Дорожки -->
+      <bpmndi:BPMNShape id="Lane_Student_di" bpmnElement="Lane_Student" isHorizontal="true">
+        <dc:Bounds x="50" y="50" width="1300" height="150" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_Teacher_di" bpmnElement="Lane_Teacher" isHorizontal="true">
+        <dc:Bounds x="50" y="200" width="1300" height="150" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true">
+        <dc:Bounds x="50" y="350" width="1300" height="150" />
+      </bpmndi:BPMNShape>
+
+      <!-- Элементы на дорожках -->
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="StartEvent_1">
+        <dc:Bounds x="100" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task1" bpmnElement="Task_1">
+        <dc:Bounds x="200" y="100" width="180" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task2" bpmnElement="Task_2">
+        <dc:Bounds x="200" y="250" width="180" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task3" bpmnElement="Task_3">
+        <dc:Bounds x="450" y="250" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task4" bpmnElement="Task_4">
+        <dc:Bounds x="450" y="400" width="200" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task5" bpmnElement="Task_5">
+        <dc:Bounds x="700" y="400" width="220" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_Task6" bpmnElement="Task_6">
+        <dc:Bounds x="980" y="400" width="240" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1250" y="400" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Соединения -->
+      <bpmndi:BPMNEdge id="Flow_1_edge" bpmnElement="Flow_1">
+        <di:waypoint x="136" y="118" />
+        <di:waypoint x="200" y="130" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_2_edge" bpmnElement="Flow_2">
+        <di:waypoint x="290" y="160" />
+        <di:waypoint x="290" y="200" />
+        <di:waypoint x="200" y="250" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_3_edge" bpmnElement="Flow_3">
+        <di:waypoint x="380" y="280" />
+        <di:waypoint x="450" y="280" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_4_edge" bpmnElement="Flow_4">
+        <di:waypoint x="550" y="310" />
+        <di:waypoint x="550" y="350" />
+        <di:waypoint x="450" y="400" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_5_edge" bpmnElement="Flow_5">
+        <di:waypoint x="650" y="430" />
+        <di:waypoint x="700" y="430" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_6_edge" bpmnElement="Flow_6">
+        <di:waypoint x="920" y="430" />
+        <di:waypoint x="980" y="430" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_7_edge" bpmnElement="Flow_7">
+        <di:waypoint x="1220" y="430" />
+        <di:waypoint x="1250" y="430" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

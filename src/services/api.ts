@@ -480,6 +480,57 @@ class ApiClient {
     )
     return response.data
   }
+
+  async getSchedulesStats(params?: {
+    semesterId?: string
+  }): Promise<ApiResponse<any>> {
+    const response = await this.client.get("/schedules/stats", { params })
+    return response.data
+  }
+
+  // Статистика для админского дашборда
+  async getAdminStats(): Promise<{
+    teachers: number
+    students: number
+    groups: number
+    departments: number
+    activeSchedules: number
+    todayLessons: number
+  }> {
+    try {
+      const [teachers, groups, departments, schedules] = await Promise.all([
+        this.getTeachers(),
+        this.getGroups(),
+        this.getDepartments(),
+        this.getSchedules(),
+      ])
+
+      const studentsCount =
+        groups.groups?.reduce(
+          (total, group) => total + (group.students?.length || 0),
+          0
+        ) || 0
+
+      return {
+        teachers: teachers.teachers?.length || 0,
+        students: studentsCount,
+        groups: groups.groups?.length || 0,
+        departments: departments.departments?.length || 0,
+        activeSchedules: schedules.schedules?.length || 0,
+        todayLessons: 0, // TODO: можно добавить подсчет занятий на сегодня
+      }
+    } catch (error) {
+      console.error("Error fetching admin stats:", error)
+      return {
+        teachers: 0,
+        students: 0,
+        groups: 0,
+        departments: 0,
+        activeSchedules: 0,
+        todayLessons: 0,
+      }
+    }
+  }
 }
 
 // Создаем и экспортируем экземпляр API клиента

@@ -302,7 +302,7 @@ const LoginPage: React.FC = () => {
         </Card>
 
         <Typography variant="body2" color="text.secondary" sx={{ mt: 4 }}>
-          © 2024 БГУИР. Электронный журнал посещаемости
+          © 2025 БГУИР. Электронный журнал посещаемости
         </Typography>
       </Box>
     </Container>
